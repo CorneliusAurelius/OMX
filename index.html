@@ -824,20 +824,39 @@ export async function initUI(){
 </script>
 
 <!-- Main entry -->
+<!-- Main entry: inline-module bootstrap for GitHub Pages -->
 <script type="module">
-import {initUI} from './index.html#mod-ui';
-initUI().catch(err=>{
-  console.error(err);
-  const t=document.getElementById('toast'); t.textContent='Error: '+err.message; t.classList.add('show');
-});
+  // Build blob URLs for each inline module
+  const modIds = ['mod-state','mod-data','mod-math','mod-render','mod-ui'];
+  const urls = {};
+  for (const id of modIds) {
+    const code = document.getElementById(id).textContent;
+    urls[id] = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+  }
+
+  // Install an import map that points our specifiers to those blobs
+  const imap = {
+    imports: {
+      './index.html#mod-state': urls['mod-state'],
+      './index.html#mod-data':  urls['mod-data'],
+      './index.html#mod-math':  urls['mod-math'],
+      './index.html#mod-render':urls['mod-render'],
+      './index.html#mod-ui':    urls['mod-ui']
+    }
+  };
+  const s = document.createElement('script');
+  s.type = 'importmap';
+  s.textContent = JSON.stringify(imap);
+  document.currentScript.after(s);
+
+  // Now import UI and start
+  import('./index.html#mod-ui').then(({initUI}) => initUI()).catch(err => {
+    console.error(err);
+    const t = document.getElementById('toast');
+    t.textContent = 'Error: ' + err.message;
+    t.classList.add('show');
+  });
 </script>
 
-<!-- How to deploy to GitHub Pages
-1) Create a new GitHub repo. Name it anything. Add this single file as `index.html` at repo root.
-2) Commit and push.
-3) In GitHub, go to Settings → Pages. Set "Build and deployment" → "Branch: main" and "/" root. Save.
-4) Wait for the green check. Your site will be live at: https://<your-username>.github.io/<repo-name>/
-5) To deploy updates, push new commits. Browsers will auto-cache via the Service Worker in this file.
--->
 </body>
 </html>
